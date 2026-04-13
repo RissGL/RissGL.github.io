@@ -1,9 +1,9 @@
+# 这个脚本会让 GitHub 每次在你 push 代码时，自动帮你运行 Hugo 编译网页
 name: Deploy Hugo site to Pages
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: ["main"] # 如果你的主分支叫 master，请改成 ["master"]
 
 permissions:
   contents: read
@@ -21,20 +21,22 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      HUGO_VERSION: 0.120.0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: recursive # 极其重要！这行保证它能下载到你的 Huey 主题
+          fetch-depth: 0
+
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
           extended: true
-      - name: Build with Hugo
+
+      - name: Build
         run: hugo --minify
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

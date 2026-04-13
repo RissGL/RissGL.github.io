@@ -1,21 +1,26 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>我的个人博客</title>
+    <title>Welcome</title>
     <link>http://localhost:1313/</link>
-    <description>Recent content from 我的个人博客</description>
+    <description>Recent content on Welcome</description>
     <generator>Hugo</generator>
-    <language>zh-cn</language>
-    
-    <managingEditor>xxx@example.com (D-Sketon)</managingEditor>
-    <webMaster>xxx@example.com (D-Sketon)</webMaster>
-    
-    <copyright>本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处！</copyright>
-    
-    
-    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss&#43;xml" />
-    
-
-    
+    <language>en-us</language>
+    <lastBuildDate>Sun, 12 Apr 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>我的第一篇博客</title>
+      <link>http://localhost:1313/archive/first-posts/</link>
+      <pubDate>Sun, 12 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/archive/first-posts/</guid>
+      <description>&lt;ul&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Hi! 这里是&lt;strong&gt;RissAR&lt;/strong&gt;&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;我是一名&lt;strong&gt;游戏开发者&lt;/strong&gt;，该博客用于记录自己的学习并做分享&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;毕竟有个博客才有敲字的动力，敲了字才能更好的记住知识对吧！&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>关于我</title>
+      <link>http://localhost:1313/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/about/</guid>
+      <description>&lt;h2 id=&#34;你好我是-rissgl&#34;&gt;你好，我是 RissGL！&lt;/h2&gt;&#xA;&lt;p&gt;欢迎来到我的个人博客。我是一名游戏开发者。&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;正在学习：&lt;/strong&gt; C#, C++,Unity&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;博客初衷&#34;&gt;博客初衷&lt;/h3&gt;&#xA;&lt;p&gt;“学到了啥还是要敲一敲才能印象深刻。”&#xA;这里是我记录踩坑日常、分享学习笔记的自留地。&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;p&gt;&lt;img src=&#34;me.jpg&#34; alt=&#34;我的照片&#34;&gt;&lt;/p&gt;</description>
+    </item>
   </channel>
 </rss>

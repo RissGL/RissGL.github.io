@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Abouts on Welcome</title>
+    <link>http://localhost:1313/about/</link>
+    <description>Recent content in Abouts on Welcome</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:1313/about/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>关于我</title>
+      <link>http://localhost:1313/about/indesx/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/about/indesx/</guid>
+      <description>&lt;h2 id=&#34;你好我是-rissgl&#34;&gt;你好，我是 RissGL！&lt;/h2&gt;&#xA;&lt;p&gt;欢迎来到我的个人博客。我是一名游戏开发者。&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;正在学习：&lt;/strong&gt; C#, C++,Unity&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h3 id=&#34;博客初衷&#34;&gt;博客初衷&lt;/h3&gt;&#xA;&lt;p&gt;“学到了啥还是要敲一敲才能印象深刻。”&#xA;这里是我记录踩坑日常、分享学习笔记的自留地。&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;p&gt;&lt;img src=&#34;me.jpg&#34; alt=&#34;我的照片&#34;&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

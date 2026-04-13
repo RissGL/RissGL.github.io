@@ -1,3 +1,6 @@
 [submodule "themes/hugo-theme-reimu"]
 	path = themes/hugo-theme-reimu
 	url = https://github.com/D-Sketon/hugo-theme-reimu.git
+[submodule "themes/huey"]
+	path = themes/huey
+	url = https://github.com/alloydwhitlock/huey.git
