@@ -1,6 +1,6 @@
 baseURL = "https://RissGL.github.io/"
 languageCode = "en-us" # 如果写中文，可以改为 "zh-cn"
-title = "Welcome"
+title = "RissAR的博客"
 theme = "huey"
 canonifyurls = true
 
