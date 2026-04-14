@@ -93,6 +93,6 @@ draft: false
 
 你可以通过[Meeshy Pom! ](https://alqper.itch.io/mishy-pom) 下载游玩咪西碰，（也就是演示图片的游戏）
 
-或者通过[[度盘](https://pan.baidu.com/s/1e1zZKnNPnDjcsRQpCCNKSg?pwd=eti2)  提取码: eti2 [M盘](https://mega.nz/file/mR1k2QBT#DsjpdGhAQIJrjbO9vU1xOQ7Y5Y7eQLINhM7nJWLuU3Y) 下载
+或者通过[度盘](https://pan.baidu.com/s/1e1zZKnNPnDjcsRQpCCNKSg?pwd=eti2)  提取码: eti2 [M盘](https://mega.nz/file/mR1k2QBT#DsjpdGhAQIJrjbO9vU1xOQ7Y5Y7eQLINhM7nJWLuU3Y) 下载
 
 下次再见！
