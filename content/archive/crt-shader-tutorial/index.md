@@ -9,7 +9,7 @@ draft: false
 
 
 
-# 什么是CRT
+## 什么是CRT
 
    CRT效果（阴极射线管效果）是指模拟老式大头电视或显示器（CRT显示器，也就是大屁股电脑的显示器）显像风格的视觉特征，其特征是画面具有物理弧度，扫描线，RBG荧光光点，在有的老式CRT上还有会在电压不稳定导致的全局明暗微微闪烁，这些效果听起来像是把你的画面“变差”了，但是在有些情况下，会让你的画面多出别样的风味
 
@@ -31,7 +31,7 @@ draft: false
 
 
 
-# 如何制作一个CRT效果
+## 如何制作一个CRT效果
 
 
 
@@ -66,8 +66,6 @@ draft: false
 * #### 像素荧光光点
   
    新建一个ScreenPosition节点和Checkerboard节点（棋盘格）将ScreenPosition的Out连入Checkerboard的UV，修改ColorA和ColorB可以更改棋盘颜色，建议改为白色和灰色，最下面的网格X,Y可以控制网格密度，建议给个300-500的值以模仿CRT的屏幕物理像素的颗粒感（晶格化），新建一个Multiply节点，将Checkerboard的输出和我们在明暗变化那一步最终的Multiply的输出分别连入新建的Multiply节点的A和B  
-  
-  
   
   <br>
 
