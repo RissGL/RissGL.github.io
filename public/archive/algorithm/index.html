@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>算法 : RissAR的博客</title>
+    <meta charset="utf-8">
+    <meta name="description" content="这是一个基于 Huey 主题的极简博客" />
+    <meta name="dc.relation" content="http://localhost:1313/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/style.min.22053be90a0a1bcf45d5de051fef4281e590b7ae10e7e2fbb45bb41252e17f04.css" integrity="sha256-IgU76QoKG89F1d4FH&#43;9CgeWQt64Q5&#43;L7tFu0ElLhfwQ=">
+
+
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/style.min.1f9f55561f84d16b2741033325db3a786d51d0abd48e8189c111941bf5cb94f5.css" integrity="sha256-H59VVh&#43;E0WsnQQMzJds6eG1R0KvUjoGJwRGUG/XLlPU=">
+
+
+
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/assets/css/extra.css" media="screen">
+    
+    
+
+    <script src="http://localhost:1313/js/bulma.js"></script>
+
+    <link rel="shortcut icon" type="image/x-icon" href="http://localhost:1313/img/">
+</head><body>
+        <div id="container">
+<div class="container">
+<nav class="navbar  mb-4" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item title has-text-black" href="http://localhost:1313/">RissAR的博客</a>
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar-menu">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div id="navbar-menu" class="navbar-menu">
+    <div class="navbar-end">
+        
+        <a class="navbar-item" href="http://localhost:1313/"  >首页</a>
+        
+        <a class="navbar-item" href="http://localhost:1313/archive/"  >文章</a>
+        
+        <a class="navbar-item" href="http://localhost:1313/about/"  >关于我</a>
+        
+    </div>
+  </div>
+</nav>
+</div><div class="container">
+                <div id="content">
+<main aria-role="main">
+  <div class="section">
+    <div class="columns">
+      <div class="column">
+        <figure class="image ">
+          
+        </figure>
+      </div>
+    </div>
+    <div class="columns">
+      <div class="column">
+        <div class="content">
+          <h1 class="title is-3">算法</h1>
+          <h2 class="subtitle is-5"><time>April 15, 2026</time></h2>
+          <p class="subtitle is-4"></p>
+          <h2 id="前言">前言</h2>
+<p>本人是算法苦手，写这篇博客本身是为了利用费曼学习法帮助自己巩固算法知识，不过你也可以看看</p>
+<h3 id="a算法">A*算法</h3>
+<h4 id="原理">原理</h4>
+<p>A*算法是游戏开发中最常用的寻路算法，它的原理也符合人类的直觉</p>
+<p>核心是三个值，分别是g值，h值，f值，以寻路来说</p>
+<p>这里三个值分别代表着，到目前节点要复付出的代价，目前节点预测到终点的代价，最终的代价    这里的h值通常代表着曼哈顿距离，代表着无视障碍物直接到终点的预测花费，而f值为g值+h值</p>
+<p>除了这三个值之外我们还需要一个待探索列表，用于记录有潜力的节点，我们通过每次都取该列表中f值最低的去进行寻路，以提高寻路效率</p>
+<h3 id="实践">实践</h3>
+<p>在开始算法之前，为了使我们写出来的东西具有泛用性，而不是当个科普就过了，请定义以下接口</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c#" data-lang="c#"><span style="display:flex;"><span><span style="color:#75715e">//只要实现了这个接口就能被我们后续的寻路脚本处理</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">IPathGraph</span>&lt;T&gt;
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//得到邻居列表</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> List&lt;T&gt; GetNeighbors(T node);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//得到移动代价</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> GetMoveCost(T fromNode,T toNode);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//得到h值</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> GetHeuristicCost(T fromNode, T toNode);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>接下来我们新建一个静态类命名为AStarPathfinder，再这个类里面我们需要三个方法,你可以根据原理先自己思考一下如何实现函数</p>
+<pre tabindex="0"><code>public static class AStarPathfinder
+{
+    public static List&lt;T&gt; FindPath(IPathGraph&lt;T&gt;,T start,T end,out int totalCost)
+     where T:System.IEquatable&lt;T&gt;// 约束 T 必须实现 IEquatable，以便作为字典的 Key
+    {
+    
+    }
+
+    //该函数用于回溯路径，在到达终点的时候回溯出最短路径
+    private static List&lt;T&gt; RetracePath&lt;T&gt;(Dictionary&lt;T, T&gt; cameFrom, T current)
+    {
+    
+    }
+
+    //用于得到最小f值的节点
+    private static T GetLowestFCostNode&lt;T&gt;(List&lt;T&gt; openList, Dictionary&lt;T, int&gt; fCostDict)
+    {
+    
+    }
+}
+</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c#" data-lang="c#"><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> List&lt;T&gt; FindPath&lt;T&gt;(IPathGraph&lt;T&gt; graph, T start, T end, <span style="color:#66d9ef">out</span> <span style="color:#66d9ef">int</span> totalCost)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">where</span> T : System.IEquatable&lt;T&gt;<span style="color:#75715e">// 约束 T 必须实现 IEquatable，以便作为字典的 Key</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        totalCost = <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        List&lt;T&gt; openList=<span style="color:#66d9ef">new</span> List&lt;T&gt;();<span style="color:#75715e">//开放列表</span>
+</span></span><span style="display:flex;"><span>        List&lt;T&gt; finalPath=<span style="color:#66d9ef">new</span> List&lt;T&gt;();<span style="color:#75715e">//最终路径</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//由于需要存储一个节点引用和对应的g,f值，这里使用字典再合适不过</span>
+</span></span><span style="display:flex;"><span>        Dictionary&lt;T,<span style="color:#66d9ef">int</span>&gt; gCostDict=<span style="color:#66d9ef">new</span> Dictionary&lt;T,<span style="color:#66d9ef">int</span>&gt;();
+</span></span><span style="display:flex;"><span>        Dictionary&lt;T,<span style="color:#66d9ef">int</span>&gt; fCostDict=<span style="color:#66d9ef">new</span> Dictionary&lt;T,<span style="color:#66d9ef">int</span>&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//初始化数据</span>
+</span></span><span style="display:flex;"><span>        gCostDict[start] = <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>        fCostDict[start] = graph.GetHeuristicCost(start, end);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//存储路径，以便后续回溯</span>
+</span></span><span style="display:flex;"><span>        Dictionary&lt;T,T&gt; cameFrom=<span style="color:#66d9ef">new</span> Dictionary&lt;T,T&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        openList.Add(start);<span style="color:#75715e">//加入初始节点</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//只要openList还有东西就继续搜索</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">while</span> (openList.Count &gt; <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//拿到预测f值最低的节点</span>
+</span></span><span style="display:flex;"><span>            T current = GetLowestFCostNode(openList, fCostDict);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//如果到达终点就记录数据并跳出循环</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (current.Equals(end))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                finalPath = RetracePath&lt;T&gt;(cameFrom, current);
+</span></span><span style="display:flex;"><span>                totalCost = gCostDict[current];
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//已经到达的节点就能直接从openList移除了</span>
+</span></span><span style="display:flex;"><span>            openList.Remove(current);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//得到所有临近单位</span>
+</span></span><span style="display:flex;"><span>            List&lt;T&gt; neighbors = graph.GetNeighbors(current);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">foreach</span> (T neighbor <span style="color:#66d9ef">in</span> neighbors) 
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">//计算暂定g成本</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">int</span> tentativeGCost=gCostDict[current]+graph.GetMoveCost(current,neighbor);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">//当没到过这个节点或这个节点算出来比之前小的话纳入统计</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (!gCostDict.ContainsKey(neighbor) || tentativeGCost &lt; gCostDict[neighbor])
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">//将这个节点的来路记为current</span>
+</span></span><span style="display:flex;"><span>                    cameFrom[neighbor]=current;
+</span></span><span style="display:flex;"><span>                    gCostDict[neighbor]=tentativeGCost;
+</span></span><span style="display:flex;"><span>                    fCostDict[neighbor]=tentativeGCost+graph.GetHeuristicCost(neighbor,end);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">//加入下一次探索的列表</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">if</span> (!openList.Contains(neighbor))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        openList.Add(neighbor);
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> finalPath;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//该函数用于回溯路径，在到达终点的时候回溯出最短路径</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> List&lt;T&gt; RetracePath&lt;T&gt;(Dictionary&lt;T, T&gt; cameFrom, T current)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        List&lt;T&gt; path=<span style="color:#66d9ef">new</span> List&lt;T&gt;();
+</span></span><span style="display:flex;"><span>        path.Add(current);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//这里通过不断的回溯将路径加入列表，有点双向链表的感觉</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">while</span> (cameFrom.ContainsKey(current))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            path.Add(cameFrom[current]);
+</span></span><span style="display:flex;"><span>            current = cameFrom[current];
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//上一步得到的路径是终点到起点的，我们要做一步反转才是正确的</span>
+</span></span><span style="display:flex;"><span>        path.Reverse();
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> path;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//用于得到最小f值的节点</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> T GetLowestFCostNode&lt;T&gt;(List&lt;T&gt; openList, Dictionary&lt;T, <span style="color:#66d9ef">int</span>&gt; fCostDict)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        T lowestNode = openList[<span style="color:#ae81ff">0</span>];
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">int</span> fNodeCostOne = fCostDict.ContainsKey(lowestNode)?fCostDict[lowestNode]:<span style="color:#66d9ef">int</span>.MaxValue;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i = <span style="color:#ae81ff">1</span>; i &lt; openList.Count; i++)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            T node = openList[i];
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">int</span> fNodeCost= fCostDict.ContainsKey(node) ? fCostDict[node] : <span style="color:#66d9ef">int</span>.MaxValue;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (fNodeCost &lt; fNodeCostOne)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                fNodeCostOne = fNodeCost;
+</span></span><span style="display:flex;"><span>                lowestNode = node;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> lowestNode;
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+                </div>
+            </div><footer class="footer">
+  <div class="has-text-centered">
+    <layer>
+      
+        
+          
+          <a class="footer-social" href="https://github.com/RissGL">Github</a>
+          
+        
+      
+    </layer>
+    <layer>
+      <p>
+        
+        Website theme is <a class="has-text-weight-semibold" href="https://github.com/alloydwhitlock/huey">Huey</a> by <a class="has-text-weight-semibold" href="https://adamwhitlock.com">Adam Whitlock</a>.
+      </p>
+      <p>
+         &copy; 2026 RissGL
+      </p>
+    </layer>
+  </div>
+</footer></div></body>
+</html>
