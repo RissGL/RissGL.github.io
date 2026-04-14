@@ -2,7 +2,6 @@
 
 title: "如何用shader graph实现CRT效果"
 date: 2026-04-12
-type: "blog"
 draft: false
 
 ---
