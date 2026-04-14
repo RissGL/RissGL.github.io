@@ -7,7 +7,9 @@ draft: false
 
 
 
-## 什么是CRT
+
+
+# 什么是CRT
 
    CRT效果（阴极射线管效果）是指模拟老式大头电视或显示器（CRT显示器，也就是大屁股电脑的显示器）显像风格的视觉特征，其特征是画面具有物理弧度，扫描线，RBG荧光光点，在有的老式CRT上还有会在电压不稳定导致的全局明暗微微闪烁，这些效果听起来像是把你的画面“变差”了，但是在有些情况下，会让你的画面多出别样的风味
 
@@ -27,15 +29,23 @@ draft: false
 
   当然，使用CRT效果的独立游戏有很多，前两年爆火的《小丑牌》和《动物井》，你可以自行查看他们是如何使用CRT效果的
 
-## 如何制作一个CRT效果
+
+
+# 如何制作一个CRT效果
+
+
 
 在开头已经提到了CRT的特征元素，接下来我们就一条一条的实现
+
+
 
 ### 开始之前
 
   请确保你的摄像机（main camera）开启了Post Processing，以便后续的后处理，再新建一个shader graph（Shader Graph->UPR->Full Screen Shader Graph），命名为CRT_Effect或者任意你喜欢的命名。请注意该shader类型为Full Screen Shader。右键该shader新建一个材质。
 
   点开左上角edit，侧边栏找到Graphics，点击在最顶上（或许版本不同会在其他敌方）Scriptable Render Pipeline Setting栏中的那个文件，再在那个文件的Rendering中点击Renderer  List中的文件（在我这里该文件命名为Renderer2D），点击最底下Add Renderer Feature，添加一个Full Screen Pass Rend，Injection Point改为后处理之前，在Pass Material中拖入我们刚刚新建好的材质，这样准备工作就完成了
+
+
 
 ### 正式开始
 
@@ -45,13 +55,23 @@ draft: false
 
 ![连线1](node-step1.png)
 
+
+
 * #### 明暗变化
   
   因为变化和时间与周期有关，所以我们肯定会想到要新建一个Time节点，那有什么节点是能达到周期变化的呢？没错，就是再前文中也使用过的Sine节点，将Time连入Sine节点的In，这样就能得到周期性变化的黑白效果，由于我们要的是微微明暗变化所以我们再新建一个Remap节点，连入Sine的Out，将Out Min Max的值改为0.85和1，这样我们就能得到微微明暗变化的效果了，新建一个Multiply节点，将该Remap的节点的输出和我们在扫描线部分最后的Multiply节点分别连入新建的Multiply节点的A和B
+  
+  
+  
+  
 
 * #### 像素荧光光点
   
    新建一个ScreenPosition节点和Checkerboard节点（棋盘格）将ScreenPosition的Out连入Checkerboard的UV，修改ColorA和ColorB可以更改棋盘颜色，建议改为白色和灰色，最下面的网格X,Y可以控制网格密度，建议给个300-500的值以模仿CRT的屏幕物理像素的颗粒感（晶格化），新建一个Multiply节点，将Checkerboard的输出和我们在明暗变化那一步最终的Multiply的输出分别连入新建的Multiply节点的A和B
+  
+  
+  
+  
 
 * #### 提高亮度
   
@@ -59,7 +79,11 @@ draft: false
   
   如果你没连错的话节点应该是这样连的)
   
+  
+  
   ![最终连线](node-final.png)
+  
+  
 
 ## 后处理
 
@@ -80,6 +104,8 @@ draft: false
 以下是我的设置，你可以参考看看，并请你自己修改里面的值找到合适的效果
 
 ![参数](post-process.png)
+
+
 
 好了这片博客到此就结束了
 
