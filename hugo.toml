@@ -29,7 +29,7 @@ canonifyurls = true
 
   [[menu.nav]]
     identifier = 'archive'
-    name = '归档'
+    name = '文章'
     title = "文章归档"
     url = '/archive/'
     weight = 20

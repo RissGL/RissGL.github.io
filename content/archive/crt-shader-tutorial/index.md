@@ -33,7 +33,7 @@ draft: false
 
   请确保你的摄像机（main camera）开启了Post Processing，以便后续的后处理，再新建一个shader graph（Shader Graph->UPR->Full Screen Shader Graph），命名为CRT_Effect或者任意你喜欢的命名。请注意该shader类型为Full Screen Shader。右键该shader新建一个材质。
 
-  点开左上角edit，侧边栏找到Graphics，点击在最顶上（或许版本不同会在其他地方）Scriptable Render Pipeline Setting栏中的那个文件，再在那个文件的Rendering中点击Renderer  List中的文件（在我这里该文件命名为Renderer2D），点击最底下Add Renderer Feature，添加一个Full Screen Pass Rend，Injection Point改为后处理之前，在Pass Material中拖入我们刚刚新建好的材质，这样准备工作就完成了
+  点开左上角edit，打开project setting，侧边栏找到Graphics，点击在最顶上（或许版本不同会在其他地方）Scriptable Render Pipeline Setting栏中的那个文件，再在那个文件的Rendering中点击Renderer  List中的文件（在我这里该文件命名为Renderer2D），点击最底下Add Renderer Feature，添加一个Full Screen Pass Rend，Injection Point改为后处理之前（Before Renderer Post Processing），在Pass Material中拖入我们刚刚新建好的材质，这样准备工作就完成了
 
 ### 正式开始
 
@@ -66,7 +66,7 @@ draft: false
   如果你直接将现在的Multiply的结果连入Fragment节点的base color就能看到crt基础效果了，但是你肯定会注意到屏幕比较暗，因为我们的扫描线，棋盘格，明暗变化都与屏幕输出相乘了（虽然不是同一个Multiply节点，但是从乘法的性质来说确实是相乘了），而这些值都小于1，自然导致了我们的屏幕变暗，所以在连入base color前我们先新建一个Multiply节点，将最终结果连入这个节点的A，在B输入一个大于1的值，我这边输入的是1.5，再将这个Multiply节点连入Fragment节点的base color
   
   如果你没连错的话节点应该是这样连的)
-
+  
   ![最终连线](node-final.png)
 
 ## 后处理
