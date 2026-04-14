@@ -20,11 +20,11 @@ draft: false
 
 * 使用CRT效果前
 
-![before](D:\Blog\my-blog\content\archive\How%20To%20Make%20A%20CRT%20In%20Shader%20Graph\CRT%20before.png)
+![before](crt-after.png)
 
 * 使用CRT效果后
 
-![after](D:\Blog\my-blog\content\archive\How%20To%20Make%20A%20CRT%20In%20Shader%20Graph\CRT%20afte.png)
+![after](crt-before.png)
 
 注：这里我lens设置为负数，所以画面向里凹，而不是传统CRT的向外凸
 
@@ -60,7 +60,7 @@ draft: false
 
 
 
-![连线1](D:\Blog\my-blog\content\archive\How%20To%20Make%20A%20CRT%20In%20Shader%20Graph\屏幕截图%202026-04-14%20133109.png)
+![连线1](node-step1.png)
 
 
 
@@ -82,7 +82,7 @@ draft: false
   
   如果你没连错的话节点应该是这样连的)
   
-  ![最终连线](D:\Blog\my-blog\content\archive\How%20To%20Make%20A%20CRT%20In%20Shader%20Graph\屏幕截图%202026-04-14%20141033.png)
+  ![最终连线](node-final.png)
 
 
 
@@ -106,7 +106,7 @@ draft: false
 
 以下是我的设置，你可以参考看看，并请你自己修改里面的值找到合适的效果
 
-![参数](D:\Blog\my-blog\content\archive\How%20To%20Make%20A%20CRT%20In%20Shader%20Graph\屏幕截图%202026-04-14%20141914.png)
+![参数](post-process.png)
 
 
 
