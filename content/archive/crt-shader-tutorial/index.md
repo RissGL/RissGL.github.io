@@ -1,5 +1,5 @@
 ---
-title: "如何用shader graph实现CRT效果"
+title: "如何用Shader Graph实现CRT效果"
 date: 2026-04-12
 draft: false
 
@@ -33,19 +33,17 @@ draft: false
 
   请确保你的摄像机（main camera）开启了Post Processing，以便后续的后处理，再新建一个shader graph（Shader Graph->UPR->Full Screen Shader Graph），命名为CRT_Effect或者任意你喜欢的命名。请注意该shader类型为Full Screen Shader。右键该shader新建一个材质。
 
-  点开左上角edit，侧边栏找到Graphics，点击在最顶上（或许版本不同会在其他敌方）Scriptable Render Pipeline Setting栏中的那个文件，再在那个文件的Rendering中点击Renderer  List中的文件（在我这里该文件命名为Renderer2D），点击最底下Add Renderer Feature，添加一个Full Screen Pass Rend，Injection Point改为后处理之前，在Pass Material中拖入我们刚刚新建好的材质，这样准备工作就完成了
+  点开左上角edit，侧边栏找到Graphics，点击在最顶上（或许版本不同会在其他地方）Scriptable Render Pipeline Setting栏中的那个文件，再在那个文件的Rendering中点击Renderer  List中的文件（在我这里该文件命名为Renderer2D），点击最底下Add Renderer Feature，添加一个Full Screen Pass Rend，Injection Point改为后处理之前，在Pass Material中拖入我们刚刚新建好的材质，这样准备工作就完成了
 
 ### 正式开始
 
 * #### 扫描线
   
-    打开我们新建的shader graph文件，右键新建一个Screen Position节点，得到屏幕坐标，新建一个Split，将Screen Position的Out连接到Split的In上，这样我们就分离出了四个通道RGBA，在Shader Graph中数据是用向量（vector）表示的，屏幕坐标的R代表着X轴，G代表Y轴，因为我们要制作的是上下的扫描线所以我们后续将会使用G通道，新建一个Multiply（相乘）节点，将Split的G通道连入A，将Multiply的B设置为一个很大的值，我这里设置为了500，新建一个Sine（正弦）节点，将Multiply的Out连入In，这样你就得到了一堆密集的横线。  
+  打开我们新建的 Shader Graph 文件，右键新建一个 Screen Position 节点，得到屏幕坐标。接着，新建一个 Split 节点，将 Screen Position 的 Out 连接到 Split 的 In 上，这样我们就分离出了 RGBA 四个通道。在 Shader Graph 中，数据是用向量（Vector）表示的，屏幕坐标的 R 代表 X 轴，G 代表 Y 轴。因为我们要制作的是上下的扫描线，所以后续将会使用 G 通道。新建一个 Multiply（相乘）节点，将 Split 的 G 通道连入 A，并将 B 设置为一个很大的值（我这里设置为了 500）。随后，新建一个 Sine（正弦）节点，将 Multiply 的 Out 连入 In，这样你就得到了一堆密集的横线。  
   
-  <br>
+  为了让画面看起来不那么死板，我们回到开头，给它添加动态效果。新建一个 Time 节点，将其连入一个新建的 Multiply 节点的 A 端口，并将 B 设置为 0.1（你可以手动调整这个数值来控制扫描线的速度）。接着，新建一个 Add 节点，断开最开始的 Split 和第一个 Multiply 之间的连线。将 Split 的 G 通道输出，以及连接了 Time 节点的 Multiply 的 Out，分别连入 Add 的 A 与 B。最后，将 Add 的输出重新连接到刚刚断开的那个 Multiply 节点上，这样我们就得到了会动的扫描线。  
   
-    为了看起来不那么死板，我们回到开头，新建一个Time节点，将Time连入一个新建的Multiply节点，将B设置为0.1（为了控制扫描线的速度，你可以自己手动调整数值达到不同效果），新建一个Add节点，断开开始的Split和原本的Multiply连线，将Split的Y和连接了Time节点的Multiply的Out分别连入Add的A与B，再将Add的输出连接到刚刚断开的那个节点上，我们就得到了会动的扫描线，新建一个Remap（重映射）节点，连入Sine节点的Out，将Remap节点的 Out Min Max（代表着重映射的结果）修改为0.75和1，你可以调整为不同数值可以达到不同效果，再新建一个UPR Sample Buffer节点（该节点作用为抓取处理前的游戏画面）和Multiply节点，将Remap节点的Out和UPR Sample Buffer节点分别连入Multiply节点.  
-  
-  <br>
+  接下来处理最终的画面融合。新建一个 Remap（重映射）节点，连入 Sine 节点的 Out，将 Remap 节点的 Out Min Max（代表重映射的结果）修改为 0.75 和 1，你可以调整这个数值来改变扫描线的对比度。最后，再新建一个 URP Sample Buffer 节点（该节点作用为抓取处理前的游戏画面）以及一个 Multiply 节点。将 Remap 节点的 Out 和 URP Sample Buffer 的输出分别连入这个最终 Multiply 节点的两个端口中。  
   
   如果你没做错的话最终连线应该为图中这样
 
@@ -53,7 +51,7 @@ draft: false
 
 * #### 明暗变化
   
-  因为变化和时间与周期有关，所以我们肯定会想到要新建一个Time节点，那有什么节点是能达到周期变化的呢？没错，就是再前文中也使用过的Sine节点，将Time连入Sine节点的In，这样就能得到周期性变化的黑白效果，由于我们要的是微微明暗变化所以我们再新建一个Remap节点，连入Sine的Out，将Out Min Max的值改为0.85和1，这样我们就能得到微微明暗变化的效果了，新建一个Multiply节点，将该Remap的节点的输出和我们在扫描线部分最后的Multiply节点分别连入新建的Multiply节点的A和B  
+  因为变化和时间与周期有关，所以我们肯定会想到要新建一个Time节点，那有什么节点是能达到周期变化的呢？没错，就是在前文中也使用过的Sine节点，将Time连入Sine节点的In，这样就能得到周期性变化的黑白效果，由于我们要的是微微明暗变化所以我们再新建一个Remap节点，连入Sine的Out，将Out Min Max的值改为0.85和1，这样我们就能得到微微明暗变化的效果了，新建一个Multiply节点，将该Remap的节点的输出和我们在扫描线部分最后的Multiply节点分别连入新建的Multiply节点的A和B  
   
   <br>
 
@@ -73,9 +71,9 @@ draft: false
 
 ## 后处理
 
-你先在应该已经能看到效果了，但是应该，呃…有点丑，那是因为我们还差了最后一步，后处理！
+你现在应该已经能看到效果了，但是应该，呃…有点丑，那是因为我们还差了最后一步，后处理！
 
-在你的场景新建应该空对象，命名为Global Volume，给他添加一个Volume脚本，再在Volume下Add Override，添加以下效果
+在你的场景新建一个空对象，命名为Global Volume，给他添加一个Volume脚本，再在Volume下Add Override，添加以下效果
 
 * Bloom（泛光）
 
