@@ -39,11 +39,11 @@ draft: false
 
 * #### 扫描线
   
-    打开我们新建的shader graph文件，右键新建一个Screen Position节点，得到屏幕坐标，新建一个Split，将Screen Position的Out连接到Split的In上，这样我们就分离出了四个通道RGBA，在Shader Graph中数据是用向量（vector）表示的，屏幕坐标的R代表着X轴，G代表Y轴，因为我们要制作的是上下的扫描线所以我们后续将会使用G通道，新建一个Multiply（相乘）节点，将Split的G通道连入A，将Multiply的B设置为一个很大的值，我这里设置为了500，新建一个Sine（正弦）节点，将Multiply的Out连入In，这样你就得到了一堆密集的横线。
+    打开我们新建的shader graph文件，右键新建一个Screen Position节点，得到屏幕坐标，新建一个Split，将Screen Position的Out连接到Split的In上，这样我们就分离出了四个通道RGBA，在Shader Graph中数据是用向量（vector）表示的，屏幕坐标的R代表着X轴，G代表Y轴，因为我们要制作的是上下的扫描线所以我们后续将会使用G通道，新建一个Multiply（相乘）节点，将Split的G通道连入A，将Multiply的B设置为一个很大的值，我这里设置为了500，新建一个Sine（正弦）节点，将Multiply的Out连入In，这样你就得到了一堆密集的横线。  
   
   <br>
   
-    为了看起来不那么死板，我们回到开头，新建一个Time节点，将Time连入一个新建的Multiply节点，将B设置为0.1（为了控制扫描线的速度，你可以自己手动调整数值达到不同效果），新建一个Add节点，断开开始的Split和原本的Multiply连线，将Split的Y和连接了Time节点的Multiply的Out分别连入Add的A与B，再将Add的输出连接到刚刚断开的那个节点上，我们就得到了会动的扫描线，新建一个Remap（重映射）节点，连入Sine节点的Out，将Remap节点的 Out Min Max（代表着重映射的结果）修改为0.75和1，你可以调整为不同数值可以达到不同效果，再新建一个UPR Sample Buffer节点（该节点作用为抓取处理前的游戏画面）和Multiply节点，将Remap节点的Out和UPR Sample Buffer节点分别连入Multiply节点.
+    为了看起来不那么死板，我们回到开头，新建一个Time节点，将Time连入一个新建的Multiply节点，将B设置为0.1（为了控制扫描线的速度，你可以自己手动调整数值达到不同效果），新建一个Add节点，断开开始的Split和原本的Multiply连线，将Split的Y和连接了Time节点的Multiply的Out分别连入Add的A与B，再将Add的输出连接到刚刚断开的那个节点上，我们就得到了会动的扫描线，新建一个Remap（重映射）节点，连入Sine节点的Out，将Remap节点的 Out Min Max（代表着重映射的结果）修改为0.75和1，你可以调整为不同数值可以达到不同效果，再新建一个UPR Sample Buffer节点（该节点作用为抓取处理前的游戏画面）和Multiply节点，将Remap节点的Out和UPR Sample Buffer节点分别连入Multiply节点.  
   
   <br>
   
