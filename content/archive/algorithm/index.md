@@ -21,11 +21,9 @@ A*算法是游戏开发中最常用的寻路算法，它的原理也符合人类
 
 除了这三个值之外我们还需要一个待探索列表，用于记录有潜力的节点，我们通过每次都取该列表中f值最低的去进行寻路，以提高寻路效率
 
-
-
 ### 实践
 
-在开始算法之前，为了使我们写出来的东西具有泛用性，而不是当个科普就过了，请定义以下接口
+在开始算法之前，为了使我们写出来的东西具有实用性和泛用性，而不是当个科普就过了，请定义以下接口
 
 ```c#
 //只要实现了这个接口就能被我们后续的寻路脚本处理
@@ -50,23 +48,21 @@ public static class AStarPathfinder
     public static List<T> FindPath(IPathGraph<T>,T start,T end,out int totalCost)
      where T:System.IEquatable<T>// 约束 T 必须实现 IEquatable，以便作为字典的 Key
     {
-    
+
     }
 
     //该函数用于回溯路径，在到达终点的时候回溯出最短路径
     private static List<T> RetracePath<T>(Dictionary<T, T> cameFrom, T current)
     {
-    
+
     }
 
     //用于得到最小f值的节点
     private static T GetLowestFCostNode<T>(List<T> openList, Dictionary<T, int> fCostDict)
     {
-    
+
     }
 }
-
-
 ```
 
 ```c#
