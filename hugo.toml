@@ -8,7 +8,7 @@ canonifyurls = true
   author = "RissGL"
   description = "这是一个基于 Huey 主题的极简博客"
   dateFormat = "2006-01-02" 
-  favicon = "mylogo.ico"
+  favicon = "favicon.ico"
   staticDir = ['static']
   # fontawesomeToken = "你的Token" # 如果以后你想加图标，在这里配置
 
