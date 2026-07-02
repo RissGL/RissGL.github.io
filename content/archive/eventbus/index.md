@@ -316,3 +316,199 @@ foreach (var listener in snapshot)
 Publish 一次事件（20 个监听者）：一次 lock，一次 ListPool Get/Recycle，20 个指针 AddRange 拷贝，20 次 delegate invoke。全部在 CPU cache 内完成，不触发一次 GC。
 
 这篇文章讨论的是单机 Unity 环境下的实际权衡。在一个每帧几十个事件、每个事件几十个监听者的场景中，这套组合已经足够应对。把复杂度留给编译器，把简单留给使用者。
+
+## 七、完整代码
+
+### EventBus.cs
+
+```csharp
+using System;
+using System.Collections.Generic;
+
+namespace ZGameFramework.Core
+{
+    public static class EventBus
+    {
+        private static class EventRegistry<T> where T : GameEvent
+        {
+            public static readonly List<Action<T>> ParamListeners = new List<Action<T>>();
+            public static readonly List<Action> SignalListeners = new List<Action>();
+            public static readonly object Lock = new object();
+        }
+
+        public static void Subscribe<T>(Action<T> listener) where T : GameEvent
+        {
+            lock (EventRegistry<T>.Lock)
+            {
+                EventRegistry<T>.ParamListeners.Add(listener);
+            }
+        }
+
+        public static void Subscribe<T>(Action listener) where T : GameEvent
+        {
+            lock (EventRegistry<T>.Lock)
+            {
+                EventRegistry<T>.SignalListeners.Add(listener);
+            }
+        }
+
+        public static void Unsubscribe<T>(Action listener) where T : GameEvent
+        {
+            lock (EventRegistry<T>.Lock)
+            {
+                EventRegistry<T>.SignalListeners.Remove(listener);
+            }
+        }
+
+        public static void Unsubscribe<T>(Action<T> listener) where T : GameEvent
+        {
+            lock (EventRegistry<T>.Lock)
+            {
+                EventRegistry<T>.ParamListeners.Remove(listener);
+            }
+        }
+
+        public static void Publish<T>(T eventData) where T : GameEvent
+        {
+            List<Action<T>> paramSnapshot = null;
+            List<Action> signalSnapshot = null;
+
+            lock (EventRegistry<T>.Lock)
+            {
+                if (EventRegistry<T>.ParamListeners.Count > 0)
+                {
+                    paramSnapshot = ListPool<Action<T>>.Get();
+                    paramSnapshot.AddRange(EventRegistry<T>.ParamListeners);
+                }
+
+                if (EventRegistry<T>.SignalListeners.Count > 0)
+                {
+                    signalSnapshot = ListPool<Action>.Get();
+                    signalSnapshot.AddRange(EventRegistry<T>.SignalListeners);
+                }
+            }
+
+            if (paramSnapshot != null)
+            {
+                foreach (var listener in paramSnapshot)
+                    listener?.Invoke(eventData);
+                ListPool<Action<T>>.Recycle(paramSnapshot);
+            }
+
+            if (signalSnapshot != null)
+            {
+                foreach (var listener in signalSnapshot)
+                    listener?.Invoke();
+                ListPool<Action>.Recycle(signalSnapshot);
+            }
+        }
+
+        public static void PublishSignal<T>(T signal) where T : GameEvent
+        {
+            Publish(signal);
+        }
+    }
+}
+```
+
+### GameEvent.cs
+
+```csharp
+using System;
+using System.Diagnostics;
+
+namespace ZGameFramework.Core
+{
+    public abstract class GameEvent : IPoolable
+    {
+        public abstract void OnRecycled();
+
+#if UNITY_EDITOR
+        internal bool _recycled;
+        [Conditional("UNITY_EDITOR")]
+        public void AssertSafe()
+        {
+            if (_recycled) throw new InvalidOperationException("已被回收，不要异步持有");
+        }
+#endif
+    }
+}
+```
+
+### SignalEvent.cs
+
+```csharp
+namespace ZGameFramework.Core
+{
+    public abstract class SignalEvent<T> : GameEvent where T : SignalEvent<T>, new()
+    {
+        private static readonly T Instance = new T();
+
+        public override void OnRecycled() { }
+
+        public static void Trigger()
+        {
+            EventBus.PublishSignal(Instance);
+        }
+    }
+}
+```
+
+### ParameterizedEvent.cs
+
+```csharp
+using System;
+
+namespace ZGameFramework.Core
+{
+    public abstract class ParameterizedEvent<T> : GameEvent where T : ParameterizedEvent<T>, new()
+    {
+        public abstract override void OnRecycled();
+
+        public static void Trigger(Action<T> initializer)
+        {
+            var evt = ClassPool<T>.Get();
+#if UNITY_EDITOR
+            evt._recycled = false;
+#endif
+            initializer?.Invoke(evt);
+            try
+            {
+                EventBus.Publish((T)evt);
+            }
+            finally
+            {
+#if UNITY_EDITOR
+                evt._recycled = true;
+#endif
+                ClassPool<T>.Recycle(evt);
+            }
+        }
+
+        public static void TriggerAsync(Action<T> initializer)
+        {
+            var evt = new T();
+#if UNITY_EDITOR
+            evt._recycled = false;
+#endif
+            initializer?.Invoke(evt);
+            EventBus.Publish((T)evt);
+        }
+
+        /// <summary>
+        /// 异步发布，外部必须手动回收,用于异步高频事件避免GC
+        /// </summary>
+        /// <param name="initializer"></param>
+        public static T TriggerAsyncRecycle(Action<T> initializer)
+        {
+            var evt = ClassPool<T>.Get();
+#if UNITY_EDITOR
+            evt._recycled = false;
+#endif
+            initializer?.Invoke(evt);
+            EventBus.Publish((T)evt);
+            return evt;
+        }
+    }
+}
+```

@@ -319,7 +319,186 @@
 </ul>
 <p>Publish 一次事件（20 个监听者）：一次 lock，一次 ListPool Get/Recycle，20 个指针 AddRange 拷贝，20 次 delegate invoke。全部在 CPU cache 内完成，不触发一次 GC。</p>
 <p>这篇文章讨论的是单机 Unity 环境下的实际权衡。在一个每帧几十个事件、每个事件几十个监听者的场景中，这套组合已经足够应对。把复杂度留给编译器，把简单留给使用者。</p>
-
+<h2 id="七完整代码">七、完整代码</h2>
+<h3 id="eventbuscs">EventBus.cs</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Collections.Generic;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">EventBus</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">EventRegistry</span>&lt;T&gt; <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&lt;T&gt;&gt; ParamListeners = <span style="color:#66d9ef">new</span> List&lt;Action&lt;T&gt;&gt;();
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&gt; SignalListeners = <span style="color:#66d9ef">new</span> List&lt;Action&gt;();
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">object</span> Lock = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">object</span>();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe&lt;T&gt;(Action&lt;T&gt; listener) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">lock</span> (EventRegistry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventRegistry&lt;T&gt;.ParamListeners.Add(listener);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe&lt;T&gt;(Action listener) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">lock</span> (EventRegistry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventRegistry&lt;T&gt;.SignalListeners.Add(listener);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe&lt;T&gt;(Action listener) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">lock</span> (EventRegistry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventRegistry&lt;T&gt;.SignalListeners.Remove(listener);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe&lt;T&gt;(Action&lt;T&gt; listener) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">lock</span> (EventRegistry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventRegistry&lt;T&gt;.ParamListeners.Remove(listener);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Publish&lt;T&gt;(T eventData) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            List&lt;Action&lt;T&gt;&gt; paramSnapshot = <span style="color:#66d9ef">null</span>;
+</span></span><span style="display:flex;"><span>            List&lt;Action&gt; signalSnapshot = <span style="color:#66d9ef">null</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">lock</span> (EventRegistry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (EventRegistry&lt;T&gt;.ParamListeners.Count &gt; <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    paramSnapshot = ListPool&lt;Action&lt;T&gt;&gt;.Get();
+</span></span><span style="display:flex;"><span>                    paramSnapshot.AddRange(EventRegistry&lt;T&gt;.ParamListeners);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (EventRegistry&lt;T&gt;.SignalListeners.Count &gt; <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    signalSnapshot = ListPool&lt;Action&gt;.Get();
+</span></span><span style="display:flex;"><span>                    signalSnapshot.AddRange(EventRegistry&lt;T&gt;.SignalListeners);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (paramSnapshot != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> listener <span style="color:#66d9ef">in</span> paramSnapshot)
+</span></span><span style="display:flex;"><span>                    listener?.Invoke(eventData);
+</span></span><span style="display:flex;"><span>                ListPool&lt;Action&lt;T&gt;&gt;.Recycle(paramSnapshot);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (signalSnapshot != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> listener <span style="color:#66d9ef">in</span> signalSnapshot)
+</span></span><span style="display:flex;"><span>                    listener?.Invoke();
+</span></span><span style="display:flex;"><span>                ListPool&lt;Action&gt;.Recycle(signalSnapshot);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> PublishSignal&lt;T&gt;(T signal) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            Publish(signal);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="gameeventcs">GameEvent.cs</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Diagnostics;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GameEvent</span> : IPoolable
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">void</span> OnRecycled();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">bool</span> _recycled;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Conditional(&#34;UNITY_EDITOR&#34;)]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> AssertSafe()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (_recycled) <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InvalidOperationException(<span style="color:#e6db74">&#34;已被回收，不要异步持有&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="signaleventcs">SignalEvent.cs</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SignalEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : SignalEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> T Instance = <span style="color:#66d9ef">new</span> T();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled() { }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            EventBus.PublishSignal(Instance);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="parameterizedeventcs">ParameterizedEvent.cs</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ParameterizedEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : ParameterizedEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> evt = ClassPool&lt;T&gt;.Get();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>            evt._recycled = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>            initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventBus.Publish((T)evt);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">finally</span>
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>                evt._recycled = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>                ClassPool&lt;T&gt;.Recycle(evt);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> TriggerAsync(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> evt = <span style="color:#66d9ef">new</span> T();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>            evt._recycled = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>            initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>            EventBus.Publish((T)evt);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// 异步发布，外部必须手动回收,用于异步高频事件避免GC</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;param name=&#34;initializer&#34;&gt;&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> T TriggerAsyncRecycle(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> evt = ClassPool&lt;T&gt;.Get();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>            evt._recycled = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>            initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>            EventBus.Publish((T)evt);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> evt;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
         </div>
       </div>
     </div>
