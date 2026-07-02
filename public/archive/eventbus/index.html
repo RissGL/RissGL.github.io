@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <title>构建安全、实用、高性能、GC友好的事件系统 : RissAR的博客</title>
+    <meta charset="utf-8">
+    <meta name="description" content="这是一个基于 Huey 主题的极简博客" />
+    <meta name="dc.relation" content="http://localhost:1313/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/style.min.22053be90a0a1bcf45d5de051fef4281e590b7ae10e7e2fbb45bb41252e17f04.css" integrity="sha256-IgU76QoKG89F1d4FH&#43;9CgeWQt64Q5&#43;L7tFu0ElLhfwQ=">
+
+
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/style.min.1f9f55561f84d16b2741033325db3a786d51d0abd48e8189c111941bf5cb94f5.css" integrity="sha256-H59VVh&#43;E0WsnQQMzJds6eG1R0KvUjoGJwRGUG/XLlPU=">
+
+
+
+    
+    
+    <link rel="stylesheet" href="http://localhost:1313/assets/css/extra.css" media="screen">
+    
+    
+
+    <script src="http://localhost:1313/js/bulma.js"></script>
+
+    <link rel="shortcut icon" type="image/x-icon" href="http://localhost:1313/img/mylogo.ico">
+</head><body>
+        <div id="container">
+<div class="container">
+<nav class="navbar  mb-4" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item title has-text-black" href="http://localhost:1313/">RissAR的博客</a>
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar-menu">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div id="navbar-menu" class="navbar-menu">
+    <div class="navbar-end">
+        
+        <a class="navbar-item" href="http://localhost:1313/"  >首页</a>
+        
+        <a class="navbar-item" href="http://localhost:1313/archive/"  >文章</a>
+        
+        <a class="navbar-item" href="http://localhost:1313/about/"  >关于我</a>
+        
+    </div>
+  </div>
+</nav>
+</div><div class="container">
+                <div id="content">
+<main aria-role="main">
+  <div class="section">
+    <div class="columns">
+      <div class="column">
+        <figure class="image ">
+          
+        </figure>
+      </div>
+    </div>
+    <div class="columns">
+      <div class="column">
+        <div class="content">
+          <h1 class="title is-3">构建安全、实用、高性能、GC友好的事件系统</h1>
+          <h2 class="subtitle is-5"><time>July 2, 2026</time></h2>
+          <p class="subtitle is-4"></p>
+          <h2 id="一为什么要有事件中心">一、为什么要有事件中心</h2>
+<p><strong>事件中心</strong>（Event Center / Event Bus）本质上是一个<strong>全局的消息中转站</strong>。它的核心存在意义只有两个字：<strong>解耦（Decoupling）</strong></p>
+<p>这篇文章记录我逐步构建一个完整事件系统的设计思路，最终版本具有以下特点：</p>
+<ul>
+<li><strong>零 GC</strong> —— 热路径上不产生堆分配</li>
+<li><strong>类型安全</strong> —— 编译期就能发现错误</li>
+<li><strong>线程安全</strong> —— 网络回调、异步加载不会把底层数据结构撕烂</li>
+<li><strong>迭代安全</strong> —— 回调里再订阅/退订不会崩溃</li>
+<li><strong>职责清晰</strong> —— 数据从哪来、回收到哪去，泾渭分明</li>
+</ul>
+<p>注：为了应对事件频繁的情况使用了对象池</p>
+<h2 id="二事件的存储">二、事件的存储</h2>
+<p>事件中心存储事件监听者最简单的想法是每个事件对应一个枚举，定义一个EventID枚举，和IEventInfo接口统筹不同参数数量的事件，再在内部用一个<code>Dictionary&lt;int, IEventInfo&gt;</code>存储事件，但是这样存在一些让人难以接受的问题</p>
+<p>1.手动维护一个枚举</p>
+<p>2.编译期类型不安全，难调试</p>
+<p>3.代码膨胀，每个参数数量的函数都要写一遍</p>
+<p>于是有了存储事件监听者的另一个朴素想法：用一个 <code>Dictionary&lt;Type, List&lt;Action&lt;T&gt;&gt;&gt;</code> 存起来,同时让每个事件的类继承一个抽象类GameEvent，在发布时约束泛型为GameEvent保证类型安全。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GameEvent</span>:IPooleable
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>       <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">void</span> OnRecycled();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>但问题来了——每个 <code>T</code> 不同，<code>List&lt;Action&lt;JumpEvent&gt;&gt;</code> 和 <code>List&lt;Action&lt;DeadEvent&gt;&gt;</code> 是不同类型，没法塞进同一个 Dictionary 的值里。</p>
+<p>于是有了第一版：<strong>Dictionary + object</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span>Dictionary&lt;Type, <span style="color:#66d9ef">object</span>&gt; listenerMap= <span style="color:#66d9ef">new</span>();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//订阅</span>
+</span></span><span style="display:flex;"><span>((List&lt;Action&lt;T&gt;&gt;)listenerMap[<span style="color:#66d9ef">typeof</span>(T)]).Add(listener);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//取消订阅</span>
+</span></span><span style="display:flex;"><span>((List&lt;Action&lt;T&gt;&gt;)listenerMap[<span style="color:#66d9ef">typeof</span>(T)]).Remove(listener);
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//发布事件</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (listenerMap.TryGetValue(<span style="color:#66d9ef">typeof</span>(T), <span style="color:#66d9ef">out</span> <span style="color:#66d9ef">var</span> obj))
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">var</span> actions = (List&lt;Action&lt;T&gt;&gt;)obj;
+</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> listener <span style="color:#66d9ef">in</span> actions)
+</span></span><span style="display:flex;"><span>     {
+</span></span><span style="display:flex;"><span>         listener?.Invoke(eventData);
+</span></span><span style="display:flex;"><span>     }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>能跑，但每次订阅取消订阅操作都有一层 object 强转，发布时通过字典哈希查找。更关键的是——既然事件用类型本身标识，为什么不直接用类型系统定位？</p>
+<p>于是有了新的方案，<strong>“静态泛型嵌套类”</strong></p>
+<p><strong>静态嵌套泛型类</strong>利用了 CLR 的一条底层规则：当代码第一次访问 <code>SomeClass&lt;int&gt;</code> 时，CLR 会为 <code>int</code> 这门特定泛型参数编译出一份独立的静态类副本。<code>Registry&lt;JumpEvent&gt;</code> 和 <code>Registry&lt;DeadEvent&gt;</code> 在运行时是两套完全独立的内存空间，各带各的字段，互不干涉。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// 每种事件独立一份静态空间，直接字段访问</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Registry</span>&lt;T&gt; <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&lt;T&gt;&gt; ParamListeners = <span style="color:#66d9ef">new</span> List&lt;Action&lt;T&gt;&gt;();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&gt; SignalListeners = <span style="color:#66d9ef">new</span> List&lt;Action&gt;();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">object</span> Lock = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">object</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 使用</span>
+</span></span><span style="display:flex;"><span>Registry&lt;T&gt;.ParamListeners.Add(listener);  <span style="color:#75715e">// 零查找，零强转</span>
+</span></span></code></pre></div><p>对比：</p>
+<table>
+  <thead>
+      <tr>
+          <th></th>
+          <th>Dictionary</th>
+          <th>嵌套泛型</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>定位方式</td>
+          <td>O(1) 哈希 + 类型强转</td>
+          <td>静态字段直接寻址</td>
+      </tr>
+      <tr>
+          <td>存储方式</td>
+          <td><code>object</code> 引用转换<code>List&lt;Action&lt;T&gt;&gt;</code></td>
+          <td>强类型，零转换</td>
+      </tr>
+      <tr>
+          <td>遍历所有事件</td>
+          <td>可 foreach</td>
+          <td>不需要</td>
+      </tr>
+      <tr>
+          <td>内存</td>
+          <td>字典桶数组</td>
+          <td>每个 T 一个静态类头</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="三事件的发布与订阅">三、事件的发布与订阅</h2>
+<p>有了存储，先看看 EventBus 直接暴露的 API：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span>EventBus.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+</span></span><span style="display:flex;"><span>EventBus.Publish(evt);
+</span></span><span style="display:flex;"><span>EventBus.Unsubscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+</span></span></code></pre></div><p>订阅时有一个容易踩的坑。为了让无参回调也能订阅，最开始的写法是：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// Bug：每次生成新 Lambda → GC；退订时找不到 → 内存泄漏</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe&lt;T&gt;(Action listener) <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Subscribe&lt;T&gt;(_ =&gt; listener());
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><code>_ =&gt; listener()</code> 每次调用都在堆上 new 一个新委托，<code>Unsubscribe</code> 时传入原始 <code>listener</code> 根本匹配不到。解决方案：<strong>双通道分离</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// 有参委托和纯 Action 分两个 List 存，互不转化，各自能正确退订</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&lt;T&gt;&gt; ParamListeners = <span style="color:#66d9ef">new</span>();
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&gt; SignalListeners = <span style="color:#66d9ef">new</span>();
+</span></span></code></pre></div><p>存储搞定了，但每次订阅都直接操作 <code>EventBus.Subscribe&lt;T&gt;(...)</code> 还是太麻烦，至少我本人讨厌这种写法，事件创建、填充、发布、回收这些步骤散落在调用方，容易出错。于是往上封装一层事件基类：</p>
+<p><strong>SignalEvent（无参事件）</strong></p>
+<p>无参事件本身只是一个信号，这个信号完全可以重复使用，不被GC回收，因此给每个无参事件都做成单例，外部只需要Signal.Trigger()就可以发送事件</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SignalEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : SignalEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> T Instance = <span style="color:#66d9ef">new</span> T();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger() =&gt; EventBus.PublishSignal(Instance);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled() { }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 使用：</span>
+</span></span><span style="display:flex;"><span>PlayerJumpEvent.Trigger();
+</span></span></code></pre></div><p><strong>ParameterizedEvent（参数化事件）</strong></p>
+<p>有参事件与无参的处理不同，因为数据填入后这个类的数据就变成了脏数据，应该进行回收，但如果高频事件场景频繁new()导致GC肯定是我们不希望看到的，因此用对象池进行回收</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ParameterizedEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : ParameterizedEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> evt = ClassPool&lt;T&gt;.Get();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//编辑器警告，避免异步持有引用导致事件使用时已经被回收，或里面存了别的数据</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>        evt._recycled = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>        initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span> { EventBus.Publish((T)evt); }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">finally</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span>            evt._recycled = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span><span style="display:flex;"><span>            ClassPool&lt;T&gt;.Recycle(evt);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 使用：</span>
+</span></span><span style="display:flex;"><span>PlayerDeadEvent.Trigger(e =&gt; { e.PlayerId = <span style="color:#ae81ff">1</span>; e.Cause = <span style="color:#e6db74">&#34;Lava&#34;</span>; });
+</span></span></code></pre></div><p>两层封装后，调用方不需要知道 EventBus、ClassPool、锁——只要 <code>Trigger()</code>。发布时通过 ListPool 快照遍历，既防 <code>CollectionModified</code> 崩溃，又零 GC。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// 发布核心：锁外拷贝快照，锁外执行回调</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> snapshot = ListPool&lt;Action&lt;T&gt;&gt;.Get();
+</span></span><span style="display:flex;"><span>snapshot.AddRange(actions);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> listener <span style="color:#66d9ef">in</span> snapshot)
+</span></span><span style="display:flex;"><span>    listener?.Invoke(eventData);
+</span></span><span style="display:flex;"><span>ListPool&lt;Action&lt;T&gt;&gt;.Recycle(snapshot);
+</span></span></code></pre></div><h2 id="四事件生命周期的管理">四、事件生命周期的管理</h2>
+<p>参数化事件走对象池：<code>ClassPool.Get()</code> 取出 → 填数据 → <code>Publish</code> 分发 → <code>finally</code> 里 <code>ClassPool.Recycle()</code> 回收。正常情况下这套流程没问题。</p>
+<p>隐患出在<strong>异步持有</strong>。如果某个监听者拿到事件数据后开了协程或异步调用：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span>EventBus.Subscribe&lt;PlayerDeadEvent&gt;(evt =&gt;
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    StartCoroutine(DelayedLog(evt));  <span style="color:#75715e">// evt 引用被协程持有</span>
+</span></span><span style="display:flex;"><span>});
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>IEnumerator DelayedLog(PlayerDeadEvent evt)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">yield</span> <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> WaitForSeconds(<span style="color:#ae81ff">2</span>);
+</span></span><span style="display:flex;"><span>    Debug.Log(evt.PlayerId);  <span style="color:#75715e">// 数据可能已经被覆盖了！</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><code>finally</code> 在 Publish 返回时就回收了。2 秒后协程访问 evt，池里这个对象可能已被另一个事件复用，字段全是别人的数据。</p>
+<p><strong>解决方案：两条路径。</strong></p>
+<p>正常路径走池：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span>PlayerDeadEvent.Trigger(e =&gt; { e.PlayerId = <span style="color:#ae81ff">1</span>; });  <span style="color:#75715e">// 自动回收</span>
+</span></span></code></pre></div><p>需要异步持有走 new，GC 兜底：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// ParameterizedEvent 额外提供</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> TriggerAsync(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> evt = <span style="color:#66d9ef">new</span> T();
+</span></span><span style="display:flex;"><span>    initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>    EventBus.Publish((T)evt);
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 不回收，等 GC</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>又或者提供另一个函数,让外部自行回收，这样异步高频事件场景的GC也得到了解决</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> T TriggerAsync(Action&lt;T&gt; initializer)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> evt =  ClassPool&lt;T&gt;.Get();
+</span></span><span style="display:flex;"><span>    initializer?.Invoke(evt);
+</span></span><span style="display:flex;"><span>    EventBus.Publish((T)evt);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> evt;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>加上 Editor 下回收标记辅助定位：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// GameEvent 内</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">bool</span> _recycled;
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">[Conditional(&#34;UNITY_EDITOR&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> AssertSafe()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (_recycled) <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> InvalidOperationException(<span style="color:#e6db74">&#34;已被回收，不要异步持有&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
+</span></span></code></pre></div><p>属性里调 <code>AssertSafe()</code>，误用立刻崩在 Editor 里，不带到真机上。</p>
+<h2 id="五多线程安全">五、多线程安全</h2>
+<p>游戏里多线程场景比想象中常见：网络层在后台线程收到服务器推送、寻路计算在 worker 线程返回结果——这些都可能触发事件。如果不做任何保护，多个线程同时读写 <code>List&lt;Action&lt;T&gt;&gt;</code> 会导致底层数组损坏、索引越界，甚至静默丢数据。</p>
+<p><strong>锁分离（Lock Striping）</strong></p>
+<p>直觉做法是给整个 EventBus 加一把全局锁：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">object</span> globalLock = <span style="color:#66d9ef">new</span>();
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">lock</span> (globalLock) { Publish(evt); }
+</span></span></code></pre></div><p>这能保证安全，但灾难性的性能瓶颈随之而来：假设 <code>NetworkPacketEvent</code> 的某个监听者回调耗时 100ms，在这期间 <code>JumpEvent</code>、<code>DeadEvent</code> 等所有其他事件的订阅和发布全被阻塞，整个游戏的事件系统彻底卡死。</p>
+<p>锁分离的核心思想很简单：<strong>每种事件类型给一把独立的锁</strong>。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Registry</span>&lt;T&gt; <span style="color:#66d9ef">where</span> T : GameEvent
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">object</span> Lock = <span style="color:#66d9ef">new</span>(); <span style="color:#75715e">// JumpEvent 和 DeadEvent 各有一把</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p><code>JumpEvent</code> 的订阅只锁 <code>Registry&lt;JumpEvent&gt;.Lock</code>，不影响 <code>DeadEvent</code> 的发布。不同类型之间完全并行。</p>
+<p><strong>锁外回调（Lock-Outside Callback）</strong></p>
+<p>就算是同一把锁，如果锁的持有时间太长（比如在锁内执行回调），同类型事件的多个线程还是会排长队。设计上把锁的持有压缩到极限——只在拷贝快照时加锁，Invoke 全在锁外：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">lock</span> (Registry&lt;T&gt;.Lock)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (Registry&lt;T&gt;.ParamListeners.Count &gt; <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        snapshot = ListPool&lt;Action&lt;T&gt;&gt;.Get();
+</span></span><span style="display:flex;"><span>        snapshot.AddRange(Registry&lt;T&gt;.ParamListeners); <span style="color:#75715e">// 只拷贝引用，极短</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 锁已释放</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> listener <span style="color:#66d9ef">in</span> snapshot)
+</span></span><span style="display:flex;"><span>    listener?.Invoke(eventData);  <span style="color:#75715e">// 回调在锁外，多长时间都不阻塞其他线程</span>
+</span></span></code></pre></div><p>这还解决了一个隐藏问题：<strong>死锁防御</strong>。如果回调里有人调用 <code>Subscribe&lt;T&gt;</code> 或 <code>Unsubscribe&lt;T&gt;</code>，而锁内执行了回调，就会同一个线程对同一把锁尝试重入——<code>lock</code> 不是可重入锁，死锁。锁外回调彻底避免了这种场景。</p>
+<p>总结一下这条设计链：</p>
+<table>
+  <thead>
+      <tr>
+          <th>设计决策</th>
+          <th>解决的问题</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>每种事件独立锁</td>
+          <td>不同事件类型互不阻塞</td>
+      </tr>
+      <tr>
+          <td>锁只包快照拷贝</td>
+          <td>锁持有时间极短</td>
+      </tr>
+      <tr>
+          <td>回调在锁外执行</td>
+          <td>防死锁，不阻塞同事件类型的其他线程</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="六总结">六、总结</h2>
+<p>这套事件系统最终用到了以下几个核心技术点：</p>
+<ul>
+<li><strong>静态泛型 Registry</strong> — CLR 为每个 T 独立编译，零字典零查找</li>
+<li><strong>双通道分离存储</strong> — 有参/无参委托各自独立 List，退订直接匹配</li>
+<li><strong>ListPool 快照</strong> — 池化复用内部数组，泛型迭代器是 struct，热路径零分配</li>
+<li><strong>ParameterizedEvent 自主回收</strong> — 创建者负责回收，EventBus 只分发不碰生命周期</li>
+<li><strong>锁分离 + 锁外回调</strong> — 不同事件类型互不阻塞，锁只维持快照拷贝的瞬间</li>
+</ul>
+<p>Publish 一次事件（20 个监听者）：一次 lock，一次 ListPool Get/Recycle，20 个指针 AddRange 拷贝，20 次 delegate invoke。全部在 CPU cache 内完成，不触发一次 GC。</p>
+<p>这篇文章讨论的是单机 Unity 环境下的实际权衡。在一个每帧几十个事件、每个事件几十个监听者的场景中，这套组合已经足够应对。把复杂度留给编译器，把简单留给使用者。</p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+                </div>
+            </div><footer class="footer">
+  <div class="has-text-centered">
+    <layer>
+      
+        
+          
+          <a class="footer-social" href="https://github.com/RissGL">Github</a>
+          
+        
+      
+    </layer>
+    <layer>
+      <p>
+        
+        Website theme is <a class="has-text-weight-semibold" href="https://github.com/alloydwhitlock/huey">Huey</a> by <a class="has-text-weight-semibold" href="https://adamwhitlock.com">Adam Whitlock</a>.
+      </p>
+      <p>
+         &copy; 2026 RissGL
+      </p>
+    </layer>
+  </div>
+</footer></div></body>
+</html>
