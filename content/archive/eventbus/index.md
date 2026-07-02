@@ -114,7 +114,7 @@ public static readonly List<Action<T>> ParamListeners = new();
 public static readonly List<Action> SignalListeners = new();
 ```
 
-存储搞定了，但每次订阅都直接操作 `EventBus.Subscribe<T>(...)` 还是太麻烦，至少我本人讨厌这种写法，事件创建、填充、发布、回收这些步骤散落在调用方，容易出错。于是往上封装一层事件基类：
+存储搞定了，但每次订阅都直接操作 `EventBus.Subscribe<T>(...)` 还是太麻烦，至少我本人讨厌这种写法，事件创建、填充、发布、回收这些步骤散落在调用方，容易出错。于是往上封装一层事件基类，分为有参数和无参数两类，将订阅，发布，取消订阅封装为静态函数，外部直接调用函数而不用去管事件中心
 
 **SignalEvent（无参事件）** 
 
@@ -125,13 +125,18 @@ public abstract class SignalEvent<T> : GameEvent where T : SignalEvent<T>, new()
 {
     private static readonly T Instance = new T();
 
+    public override void OnRecycled() { }
+
     public static void Trigger() => EventBus.PublishSignal(Instance);
 
-    public override void OnRecycled() { }
+    public static void Subscribe(Action listener) => EventBus.Subscribe<T>(listener);
+    public static void Unsubscribe(Action listener) => EventBus.Unsubscribe<T>(listener);
 }
 
 // 使用：
+PlayerJumpEvent.Subscribe(OnJump);
 PlayerJumpEvent.Trigger();
+PlayerJumpEvent.Unsubscribe(OnJump);
 ```
 
 **ParameterizedEvent（参数化事件）** 
@@ -146,7 +151,6 @@ public abstract class ParameterizedEvent<T> : GameEvent where T : ParameterizedE
     public static void Trigger(Action<T> initializer)
     {
         var evt = ClassPool<T>.Get();
-//编辑器警告，避免异步持有引用导致事件使用时已经被回收，或里面存了别的数据
 #if UNITY_EDITOR
         evt._recycled = false;
 #endif
@@ -160,13 +164,20 @@ public abstract class ParameterizedEvent<T> : GameEvent where T : ParameterizedE
             ClassPool<T>.Recycle(evt);
         }
     }
+
+    public static void Subscribe(Action<T> listener) => EventBus.Subscribe<T>(listener);
+    public static void Unsubscribe(Action<T> listener) => EventBus.Unsubscribe<T>(listener);
+    public static void Subscribe(Action listener) => EventBus.Subscribe<T>(listener);
+    public static void Unsubscribe(Action listener) => EventBus.Unsubscribe<T>(listener);
 }
 
 // 使用：
+PlayerDeadEvent.Subscribe(OnPlayerDead);
 PlayerDeadEvent.Trigger(e => { e.PlayerId = 1; e.Cause = "Lava"; });
+PlayerDeadEvent.Unsubscribe(OnPlayerDead);
 ```
 
-两层封装后，调用方不需要知道 EventBus、ClassPool、锁——只要 `Trigger()`。发布时通过 ListPool 快照遍历，既防 `CollectionModified` 崩溃，又零 GC。
+把 Subscribe/Unsubscribe/Trigger 收进事件类后，调用方跟 EventBus 完全解耦，只需要跟事件类型打交道：
 
 ```csharp
 // 发布核心：锁外拷贝快照，锁外执行回调
@@ -438,6 +449,8 @@ namespace ZGameFramework.Core
 ### SignalEvent.cs
 
 ```csharp
+using System;
+
 namespace ZGameFramework.Core
 {
     public abstract class SignalEvent<T> : GameEvent where T : SignalEvent<T>, new()
@@ -450,6 +463,9 @@ namespace ZGameFramework.Core
         {
             EventBus.PublishSignal(Instance);
         }
+
+        public static void Subscribe(Action listener) => EventBus.Subscribe<T>(listener);
+        public static void Unsubscribe(Action listener) => EventBus.Unsubscribe<T>(listener);
     }
 }
 ```
@@ -509,6 +525,11 @@ namespace ZGameFramework.Core
             EventBus.Publish((T)evt);
             return evt;
         }
+
+        public static void Subscribe(Action<T> listener) => EventBus.Subscribe<T>(listener);
+        public static void Unsubscribe(Action<T> listener) => EventBus.Unsubscribe<T>(listener);
+        public static void Subscribe(Action listener) => EventBus.Subscribe<T>(listener);
+        public static void Unsubscribe(Action listener) => EventBus.Unsubscribe<T>(listener);
     }
 }
 ```

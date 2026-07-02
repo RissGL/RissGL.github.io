@@ -163,20 +163,25 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// 有参委托和纯 Action 分两个 List 存，互不转化，各自能正确退订</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&lt;T&gt;&gt; ParamListeners = <span style="color:#66d9ef">new</span>();
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> List&lt;Action&gt; SignalListeners = <span style="color:#66d9ef">new</span>();
-</span></span></code></pre></div><p>存储搞定了，但每次订阅都直接操作 <code>EventBus.Subscribe&lt;T&gt;(...)</code> 还是太麻烦，至少我本人讨厌这种写法，事件创建、填充、发布、回收这些步骤散落在调用方，容易出错。于是往上封装一层事件基类：</p>
+</span></span></code></pre></div><p>存储搞定了，但每次订阅都直接操作 <code>EventBus.Subscribe&lt;T&gt;(...)</code> 还是太麻烦，至少我本人讨厌这种写法，事件创建、填充、发布、回收这些步骤散落在调用方，容易出错。于是往上封装一层事件基类，分为有参数和无参数两类，将订阅，发布，取消订阅封装为静态函数，外部直接调用函数而不用去管事件中心</p>
 <p><strong>SignalEvent（无参事件）</strong></p>
 <p>无参事件本身只是一个信号，这个信号完全可以重复使用，不被GC回收，因此给每个无参事件都做成单例，外部只需要Signal.Trigger()就可以发送事件</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SignalEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : SignalEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
 </span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">readonly</span> T Instance = <span style="color:#66d9ef">new</span> T();
 </span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled() { }
+</span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger() =&gt; EventBus.PublishSignal(Instance);
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnRecycled() { }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
 </span></span><span style="display:flex;"><span>}
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">// 使用：</span>
+</span></span><span style="display:flex;"><span>PlayerJumpEvent.Subscribe(OnJump);
 </span></span><span style="display:flex;"><span>PlayerJumpEvent.Trigger();
+</span></span><span style="display:flex;"><span>PlayerJumpEvent.Unsubscribe(OnJump);
 </span></span></code></pre></div><p><strong>ParameterizedEvent（参数化事件）</strong></p>
 <p>有参事件与无参的处理不同，因为数据填入后这个类的数据就变成了脏数据，应该进行回收，但如果高频事件场景频繁new()导致GC肯定是我们不希望看到的，因此用对象池进行回收</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ParameterizedEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : ParameterizedEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
@@ -186,7 +191,6 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Trigger(Action&lt;T&gt; initializer)
 </span></span><span style="display:flex;"><span>    {
 </span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> evt = ClassPool&lt;T&gt;.Get();
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//编辑器警告，避免异步持有引用导致事件使用时已经被回收，或里面存了别的数据</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#if</span> UNITY_EDITOR
 </span></span><span style="display:flex;"><span>        evt._recycled = <span style="color:#66d9ef">false</span>;
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#endif</span>
@@ -200,11 +204,18 @@
 </span></span><span style="display:flex;"><span>            ClassPool&lt;T&gt;.Recycle(evt);
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action&lt;T&gt; listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action&lt;T&gt; listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
 </span></span><span style="display:flex;"><span>}
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">// 使用：</span>
+</span></span><span style="display:flex;"><span>PlayerDeadEvent.Subscribe(OnPlayerDead);
 </span></span><span style="display:flex;"><span>PlayerDeadEvent.Trigger(e =&gt; { e.PlayerId = <span style="color:#ae81ff">1</span>; e.Cause = <span style="color:#e6db74">&#34;Lava&#34;</span>; });
-</span></span></code></pre></div><p>两层封装后，调用方不需要知道 EventBus、ClassPool、锁——只要 <code>Trigger()</code>。发布时通过 ListPool 快照遍历，既防 <code>CollectionModified</code> 崩溃，又零 GC。</p>
+</span></span><span style="display:flex;"><span>PlayerDeadEvent.Unsubscribe(OnPlayerDead);
+</span></span></code></pre></div><p>把 Subscribe/Unsubscribe/Trigger 收进事件类后，调用方跟 EventBus 完全解耦，只需要跟事件类型打交道：</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// 发布核心：锁外拷贝快照，锁外执行回调</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> snapshot = ListPool&lt;Action&lt;T&gt;&gt;.Get();
 </span></span><span style="display:flex;"><span>snapshot.AddRange(actions);
@@ -429,7 +440,9 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><h3 id="signaleventcs">SignalEvent.cs</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> ZGameFramework.Core
 </span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">abstract</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SignalEvent</span>&lt;T&gt; : GameEvent <span style="color:#66d9ef">where</span> T : SignalEvent&lt;T&gt;, <span style="color:#66d9ef">new</span>()
 </span></span><span style="display:flex;"><span>    {
@@ -441,6 +454,9 @@
 </span></span><span style="display:flex;"><span>        {
 </span></span><span style="display:flex;"><span>            EventBus.PublishSignal(Instance);
 </span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><h3 id="parameterizedeventcs">ParameterizedEvent.cs</h3>
@@ -496,6 +512,11 @@
 </span></span><span style="display:flex;"><span>            EventBus.Publish((T)evt);
 </span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> evt;
 </span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action&lt;T&gt; listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action&lt;T&gt; listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Subscribe(Action listener) =&gt; EventBus.Subscribe&lt;T&gt;(listener);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Unsubscribe(Action listener) =&gt; EventBus.Unsubscribe&lt;T&gt;(listener);
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div>
