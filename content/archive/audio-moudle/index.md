@@ -1,5 +1,5 @@
 ---
-title: "基于 ScriptableObject 的音频模块设计"
+title: "基于 ScriptableObject的简单音频模块设计"
 date: 2026-07-08
 draft: false
 ---
