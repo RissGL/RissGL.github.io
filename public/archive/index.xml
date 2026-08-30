@@ -6,8 +6,15 @@
     <description>Recent content in Archives on RissAR的博客</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 08 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 30 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/archive/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>大一与暑期实习总结及学习计划</title>
+      <link>http://localhost:1313/archive/internship-experience-and-learning-plan/</link>
+      <pubDate>Sun, 30 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/archive/internship-experience-and-learning-plan/</guid>
+      <description>&lt;h2 id=&#34;ai开发的暑期实习&#34;&gt;AI开发的暑期实习&lt;/h2&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;p&gt;今年的六月份，在小出租屋里刷boss却由不敢投的我在不断的刷刷刷后突然有一家小厂找上来，一份薪资很低的暑假实习，但我还是高高兴兴的接受了面试，并且顺利拿到了offer。可接受短期，可接受暑假实习，连我还是大一，面试时甚至简历上里的一些东西一时脑抽没答出来也能接受，看的出来十分缺人。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h5 id=&#34;入职后发现大家都差不多&#34;&gt;“入职后发现大家都差不多”&lt;/h5&gt;&#xA;&lt;p&gt;刚入职那天刚好开实习生培训，稀里糊涂的参加了。实习生人数很多，有十来人。其中大部分是程序的。除了我和一个大二的哥们以外都是大三的。最大感受是这些人虽然年龄大于我但水平也就半斤八两，一共三个优秀实习生一个还是我拿了，此外还有俩人开发速度太慢测试缺人手给调去测试的。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h5 id=&#34;最难的不是写代码是理解黑盒&#34;&gt;最难的不是写代码，是理解“黑盒”&lt;/h5&gt;&#xA;&lt;p&gt;实习里最难的部分是熟悉项目，和自己做demo的时候真是差别太大了。自己开发的时候知道是如何实现的也就知道该什么时候复用，出了问题能迅速定位。而公司的项目虽然工具链很完善，但对刚接触到的我来说完全就是一个黑盒，不知道什么时候该用什么，问题出在哪里。不过好在公司gpt5.6随便造，在和gpt不断沟通下还是花了两三天上手项目。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h5 id=&#34;开发的体验与对公司项目不规范部分的吐槽&#34;&gt;开发的体验与对公司项目不规范部分的吐槽&lt;/h5&gt;&#xA;&lt;p&gt;开发的过程对我来说还算简单，因为负责的工作主要是将cocos的内容迁移至unity，然后再根据策划给的优化案进行额外的一些内容开发，还有顺手解决一些cocos版本的bug。迁移工作由于有源代码加上ai，即使我不会cocos也能比较轻松的完成这部分工作，对于优化案的内容有迁移的经验后搞起来也不难。开发过程遇到的主要槽点是流程虽然完善，但是不够规范。拼音，英文命名混用，美术出的图大小也不够规范，同一用途，大小的美术资产像是手动裁剪的。最规范的地方是用ai写的代码。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h5 id=&#34;还是有学到了东西的&#34;&gt;“还是有学到了东西的”&lt;/h5&gt;&#xA;&lt;p&gt;要说学到的东西也不少，最主要的是ai的利用吧。虽然将ai接了mcp之后流程理论上能实现自动化跑通，但是实际操作上还是问题繁多，无法将整个流程都放任给ai。就两个月的实习工作下来发现，规范ai的开发方式，快速指出ai的问题是提升效率的关键。因为这些部分是ai绕不过来的地方，也是卡住开发进度的主要部分。ai能一遍跑通功能自然是最好，但是以什么方式跑通，健壮性如何，是否重复造轮子，性能开销如何都是在规范ai的开发，检查ai代码上需要考虑的。而ai被某个问题卡了半天可能也是因为一些很简单的问题，或许只要自己看一眼改两行代码就能修好（亲身经历）导致时间无意义的浪费，所以即使用了ai开发还是得自身够了解技术才行。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h5 id=&#34;实习生活&#34;&gt;实习生活&lt;/h5&gt;&#xA;&lt;p&gt;实习的生活其实还算快乐，住方面住的是亲戚家省去了不少租房成本，住的也算舒服。吃方面公司楼下的久号食堂和一个泉州牛肉馆味道很不错。最不能接受的是早起，距离公司7公里多每天8点爬起来通勤，给我大学在外租房养成的意大利作息都给调好了。而且上班累一天回到家，睡眠质量比之前还好了不少。因祸得福吧哈哈。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;h2 id=&#34;大一总结新学期学习计划&#34;&gt;大一总结新学期学习计划&lt;/h2&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;p&gt;在大一一年可以说自己产生了许多改变，我闷在宿舍不怎么去上课，渐渐学习了许多游戏开发的技能，最开始觉得敲代码无趣，但是在跟着教程搓了几个demo,再用学到的知识复刻了《轨迹》里的波姆碰时我发现了来自敲代码的正反馈。于此同时也发现了自己的不足，感叹自己面前的巨人竟然有如此之高，想爬上他的肩膀也是一件难事。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;p&gt;实习这两个月可以说是完全有在学校一样有学习的劲头，工作一天下班甚至连电脑都不太想开。不过即将开学了相信也能很快回归到之前的学习节奏。&lt;/p&gt;&#xA;&lt;!-- raw HTML omitted --&gt;&#xA;&lt;p&gt;比起大一学习了c#，c++这些编程语言以及各种应用，大二开始打算学习一些更加底层的计算机知识，编译原理，计算机组成，操作系统……。希望这样自顶向下的学习能将我面前的计算机世界的黑盒一个一个的打开。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>基于 ScriptableObject的简单音频模块设计</title>
       <link>http://localhost:1313/archive/audio-moudle/</link>
