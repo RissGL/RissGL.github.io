@@ -14,7 +14,7 @@ canonifyurls = true
 
 [pagination]
   disableAliases = false
-  pagerSize = 5
+  pagerSize = 8
   path = 'page'
 
 # -----------------------------------

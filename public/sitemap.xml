@@ -2,34 +2,34 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/archive/</loc>
+    <loc>https://RissGL.github.io/archive/</loc>
     <lastmod>2026-08-30T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/</loc>
+    <loc>https://RissGL.github.io/</loc>
     <lastmod>2026-08-30T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/internship-experience-and-learning-plan/</loc>
+    <loc>https://RissGL.github.io/archive/internship-experience-and-learning-plan/</loc>
     <lastmod>2026-08-30T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/audio-moudle/</loc>
+    <loc>https://RissGL.github.io/archive/audio-moudle/</loc>
     <lastmod>2026-07-08T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/eventbus/</loc>
+    <loc>https://RissGL.github.io/archive/eventbus/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/algorithm-game-dev/</loc>
+    <loc>https://RissGL.github.io/archive/algorithm-game-dev/</loc>
     <lastmod>2026-04-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/crt-shader-tutorial/</loc>
+    <loc>https://RissGL.github.io/archive/crt-shader-tutorial/</loc>
     <lastmod>2026-04-13T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/archive/first-posts/</loc>
+    <loc>https://RissGL.github.io/archive/first-posts/</loc>
     <lastmod>2026-04-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
+    <loc>https://RissGL.github.io/categories/</loc>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
+    <loc>https://RissGL.github.io/tags/</loc>
   </url><url>
-    <loc>http://localhost:1313/about/</loc>
+    <loc>https://RissGL.github.io/about/</loc>
   </url>
 </urlset>
