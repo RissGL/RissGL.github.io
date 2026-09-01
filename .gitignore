@@ -1,0 +1,6 @@
+# Hugo 构建产物（由 GitHub Actions 现场构建，无需提交）
+/public/
+
+# 其它常见 Hugo 生成 / 缓存
+/resources/_gen/
+.hugo_build.lock

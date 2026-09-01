@@ -1,0 +1,94 @@
+{{- /* Table of Contents (CATALOG): collapse toggle + scroll-spy highlighting. -*/}}
+<script>
+  (function () {
+    "use strict";
+
+    var toc = document.getElementById("toc");
+    if (!toc) return;
+
+    /* ---------- collapse toggle ---------- */
+    var toggle = document.getElementById("tocToggle");
+    var body = document.getElementById("toc-body");
+    if (toggle && body) {
+      toggle.addEventListener("click", function () {
+        var collapsed = toc.classList.toggle("is-collapsed");
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      });
+    }
+
+    /* ---------- scroll-spy ---------- */
+    var list = document.getElementById("toc-list");
+    if (!list) return;
+
+    var links = Array.prototype.slice.call(list.querySelectorAll("a[href^='#']"));
+    if (!links.length) return;
+
+    // Map each link to the heading element it points to.
+    var targets = links.map(function (link) {
+      var id = link.getAttribute("href").slice(1);
+      var el = null;
+      try { el = document.getElementById(id); } catch (e) { /* ignore */ }
+      return { link: link, el: el };
+    }).filter(function (item) { return item.el; });
+
+    if (!targets.length) return;
+
+    var activeLink = null;
+
+    function setActive(link) {
+      if (link === activeLink) return;
+      if (activeLink) activeLink.classList.remove("active");
+      activeLink = link;
+      if (activeLink) activeLink.classList.add("active");
+    }
+
+    function onScroll() {
+      // Steal a little from the top so the "current" heading flips right
+      // as it reaches the reading area.
+      var offset = 90;
+      var currentTop = window.pageYOffset + offset;
+      // When the user has scrolled to the bottom, mark the last heading.
+      var bottomReached =
+        (window.innerHeight + window.pageYOffset) >= document.body.scrollHeight - 2;
+
+      var current = null;
+      if (bottomReached) {
+        current = targets[targets.length - 1].link;
+      } else {
+        for (var i = 0; i < targets.length; i++) {
+          var box = targets[i].el.getBoundingClientRect();
+          if (box.top - offset <= 0) {
+            current = targets[i].link;
+          } else {
+            break;
+          }
+        }
+        // Before any heading has scrolled into the reading area, default to
+        // the first one so the catalog always has a highlighted item.
+        if (!current) current = targets[0].link;
+      }
+
+      if (current) {
+        setActive(current);
+        // Keep the active link in view inside the scrolling TOC body only,
+        // so we never trigger a whole-page jump.
+        if (body) {
+          var bodyRect = body.getBoundingClientRect();
+          var linkRect = current.getBoundingClientRect();
+          // Distance of the link relative to the body's visible box.
+          var relTop = linkRect.top - bodyRect.top;
+          var relBottom = linkRect.bottom - bodyRect.top;
+          if (relTop < 0) {
+            body.scrollTop += relTop - 4;
+          } else if (relBottom > body.clientHeight) {
+            body.scrollTop += relBottom - body.clientHeight + 4;
+          }
+        }
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+  })();
+</script>

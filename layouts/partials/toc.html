@@ -1,0 +1,21 @@
+{{- /* Table of Contents (CATALOG) sidebar.
+     Renders Hugo's built-in heading table (uses the same heading IDs
+     the content renderer generates), so scroll-spy anchors always match. -*/}}
+{{- $toc := .TableOfContents -}}
+{{- if $toc -}}
+<aside class="toc" id="toc" data-toc-entry>
+  <div class="toc-header">
+    <button class="toc-toggle" id="tocToggle" type="button"
+            aria-expanded="true" aria-controls="toc-body" aria-label="Toggle catalog">
+      <span class="toc-icon" aria-hidden="true"></span>
+      <span class="toc-title">CATALOG</span>
+    </button>
+  </div>
+  <div class="toc-body" id="toc-body">
+    <div class="toc-post-title">{{ .Title }}</div>
+    <div class="toc-list" id="toc-list" aria-label="Table of contents">
+      {{ $toc }}
+    </div>
+  </div>
+</aside>
+{{- end -}}
