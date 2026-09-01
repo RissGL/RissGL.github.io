@@ -3,4 +3,4 @@
 	url = https://github.com/D-Sketon/hugo-theme-reimu.git
 [submodule "themes/huey"]
 	path = themes/huey
-	url = https://github.com/alloydwhitlock/huey.git
+	url = https://github.com/RissGL/huey.git
